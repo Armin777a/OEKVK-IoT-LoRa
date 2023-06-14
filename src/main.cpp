@@ -1,9 +1,11 @@
 #include <Arduino.h>
+#include <Sodaq_RN2483.h>
+
+
 
 // ==============================================================================
-// LoRaWAN Terminal Application for the Microchip RN2903 LoRa Technology Module
+// LoRaWAN LED Blink Example
 // ==============================================================================
-
 
 // End-device Address:          12345678
 // EUI (optional):              0004A30B0023876D
@@ -12,89 +14,84 @@
 
 
 
-// =============================================================================
+
+
+// ==============================================================================
 // Defines
-// =============================================================================
+// ==============================================================================
 
-#define loraSerial Serial2                                                    // Serial interface used to communicate with RN2903 
-#define debugSerial SerialUSB                                                 // Serial interface used for debugging
+#if defined(ARDUINO_AVR_SODAQ_MBILI) || defined(ARDUINO_AVR_SODAQ_TATU)
+
+// MBili
+#define debugSerial Serial
+#define loraSerial Serial1
+#define beePin 20
+#elif defined(ARDUINO_SODAQ_AUTONOMO)
+
+// Autonomo
+#define debugSerial SerialUSB
+#define loraSerial Serial1
+#define beePin BEE_VCC
+#elif defined(ARDUINO_SODAQ_ONE) || defined(ARDUINO_SODAQ_ONE_BETA)
+
+// Sodaq One
+#define debugSerial SerialUSB
+#define loraSerial Serial1
+#elif defined(ARDUINO_SODAQ_EXPLORER)
+#define debugSerial SerialUSB
+#define loraSerial Serial2
+
+#else
+#error "Please select Autonomo, Mbili, or Tatu"
+
+#endif
 
 
-// =============================================================================
-// Function prototypes
-// =============================================================================
-bool rn2903HardwareReset(void);                                               // places the module in a known state
 
 
 
-// =============================================================================
-// Global variables
-// =============================================================================
-unsigned long currentMillis, previousMillis;                                  // variables used to implement blink interval
-const long interval = 250;                                                    // interval (in mS) at which to toggle LED_BUILTIN
-int ledState = LOW;                                                           // used to set the LED value
-
-
-
-
-
-// =============================================================================
-// Setup and main function
-// =============================================================================
+// ==============================================================================
+// Main Program
+// ==============================================================================
 
 void setup() {
-    while (!debugSerial);                                                       // wait for a serial terminal application to connect to the board
+    String a;
 
-    debugSerial.begin(115200);                                                  // initialize the debug serial port
-    loraSerial.begin(57600);                                                    // initialize the RN2903 serial port
+    #ifdef beePin
+        digitalWrite(beePin, HIGH);
+        pinMode(beePin, OUTPUT);
+    #endif
 
-    debugSerial.println("Microchip Technology ExpLoRer Starter Kit");           // start-up messages
-    debugSerial.println("2023 LoRa Tanfolyam");
-    debugSerial.println("Lab 1: Commands\n");
-    debugSerial.print("Resetting the RN2903 Module...");                        // Hardware-Reset the LoRa module to place in a known state
-    
-    if (rn2903HardwareReset()) {
-        debugSerial.println("success.\n");
-        
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    debugSerial.begin(57600);
+    loraSerial.begin(LoRaBee.getDefaultBaudRate());
+
+    delay(5000);
+
+    loraSerial.println("mac join abp");
+    debugSerial.println("mac join abp");
+    a = loraSerial.readString();
+    debugSerial.println(a);
+
+    while (a != "ok\r\naccepted\r\n") {
+        debugSerial.println("mac join abp");
+        a = loraSerial.readString();
+        debugSerial.println(a);
+        delay(1000);
     }
+
+    debugSerial.println("csatlakozva");
+    delay(10000);
+    debugSerial.println("Kuldes megkezdve");
 }
+
+
 
 void loop() {
+    loraSerial.println("mac tx uncnf 6 AABBCC");
+    debugSerial.println("mac tx uncnf 6 AABBCC");
+    debugSerial.println(loraSerial.readString());
 
-    while (debugSerial.available()) {
-        loraSerial.write(debugSerial.read());                                     // relay commands to RN2903 from terminal
-    }
-
-    while (loraSerial.available()) {
-        debugSerial.write(loraSerial.read());                                     // relay responses to terminal from RN2903
-        
-    }
-}
-
-
-
-
-// =============================================================================
-// Local functions
-// =============================================================================
-
-bool rn2903HardwareReset(void) {
-  char readChar;
-  unsigned long currentTime, triggerTime;
-
-  pinMode(LORA_RESET, OUTPUT);                     // Reset the LoRa module via hardware reset pin and read out the status line within the first second
-  digitalWrite(LORA_RESET, LOW);
-  delay(150);
-  digitalWrite(LORA_RESET, HIGH);
-  delay(150);
-
-  currentTime = millis();
-  triggerTime = currentTime + 1000;
-  while ((readChar = loraSerial.read()) != 0x0A) {
-    currentTime = millis();
-    if (currentTime >= triggerTime) { 
-      return false;
-    }
-  }
-  return true;
+    delay(10000);
 }
