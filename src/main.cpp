@@ -51,6 +51,37 @@
 
 
 // ==============================================================================
+// Function prototypes
+// ==============================================================================
+
+float getTemperature(void);
+void sendFloatTemperatureLora(float temperture);
+uint16_t convertFloatToDecimal(float value);
+
+
+
+
+// ==============================================================================
+// Global Variables
+// ==============================================================================
+
+// For the nonblocking delay
+unsigned long currentMillis, previousMillis;                                  // variables used to implement blink interval
+const long interval = 10000;                                                  // interval (in mS) at which to toggle LED_BUILTIN
+
+// For the leds
+int ledState = LOW;  
+
+// For the temperature sensor
+float temperature = 0;
+
+
+
+
+
+
+
+// ==============================================================================
 // Main Program
 // ==============================================================================
 
@@ -62,13 +93,20 @@ void setup() {
         pinMode(beePin, OUTPUT);
     #endif
 
-    pinMode(LED_BUILTIN, OUTPUT);
 
-    debugSerial.begin(57600);
+    // Initialize the pins
+    pinMode(LED_BUILTIN, OUTPUT);                                               // initialize digital pin LED_BUILTIN as an output.
+    pinMode(LED_GREEN, OUTPUT);                                                 // initialize digital pin LED_GREEN as an output.
+    pinMode(TEMP_SENSOR, INPUT);                                                // temperature sensor pin initialization
+    analogReadResolution(12);
+
+    // Initialize the serial ports
+    debugSerial.begin(115200);
     loraSerial.begin(LoRaBee.getDefaultBaudRate());
 
     delay(5000);
 
+    // Initialize LoRaWAN
     loraSerial.println("mac join abp");
     debugSerial.println("mac join abp");
     a = loraSerial.readString();
@@ -84,14 +122,56 @@ void setup() {
     debugSerial.println("csatlakozva");
     delay(10000);
     debugSerial.println("Kuldes megkezdve");
+
+}
+
+
+void loop() {
+
+    currentMillis = millis(); // get the current time
+
+    // is it time to blink the LED?
+    if (currentMillis - previousMillis >= interval) { 
+        previousMillis = currentMillis; // yes - save the last time we blinked the LED
+
+        if (ledState == LOW) {
+            ledState = HIGH;
+            
+            temperature = getTemperature();
+            sendFloatTemperatureLora(temperature);
+        } else {
+            ledState = LOW;
+        }
+
+        digitalWrite(LED_BUILTIN, ledState); // apply the new LED state
+    }
 }
 
 
 
-void loop() {
-    loraSerial.println("mac tx uncnf 6 AABBCC");
-    debugSerial.println("mac tx uncnf 6 AABBCC");
-    debugSerial.println(loraSerial.readString());
+// ==============================================================================
+// Functions
+// ==============================================================================
 
-    delay(10000);
+float getTemperature(void) {
+    // 10mV per C, 0C is 500mV
+    float mVolts = (float)analogRead(TEMP_SENSOR) * 3300.0 / 4096.0; // Calculate voltage value 3300mV (2^12)=4096
+    float temp = (mVolts - 500.0) / 10.0;                            // Gives value to 0.1degC - calculate temperature value
+
+    return temp;
+}
+
+void sendFloatTemperatureLora(float temperture) {
+    String commandToSend = "mac tx uncnf 6 ";
+
+    commandToSend += String(convertFloatToDecimal(temperture));
+    commandToSend += "C0";
+
+    loraSerial.println(commandToSend);
+    debugSerial.println(commandToSend);
+    debugSerial.println(loraSerial.readString());
+}
+
+uint16_t convertFloatToDecimal(float value) {
+    return value * 100;
 }
