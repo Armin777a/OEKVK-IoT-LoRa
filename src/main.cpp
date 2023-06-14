@@ -1,5 +1,10 @@
 #include <Arduino.h>
 
+// ==============================================================================
+// LoRaWAN Terminal Application for the Microchip RN2903 LoRa Technology Module
+// ==============================================================================
+
+
 // End-device Address:          12345678
 // EUI (optional):              0004A30B0023876D
 // Network Session Key:         12345678912345678912345678912345
