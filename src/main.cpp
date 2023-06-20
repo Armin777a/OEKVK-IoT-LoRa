@@ -122,11 +122,6 @@ void setup() {
     debugSerial.println("csatlakozva");
     delay(10000);
     debugSerial.println("Kuldes megkezdve");
-
-    loraSerial.println("mac pause");
-    delay(10000);
-    loraSerial.println("mac set pwr 14");
-    delay(10000);
 }
 
 
@@ -142,7 +137,7 @@ void loop() {
             ledState = HIGH;
             
             temperature = getTemperature();
-            //sendFloatTemperatureLora(temperature);
+            sendFloatTemperatureLora(temperature);
         } else {
             ledState = LOW;
         }
