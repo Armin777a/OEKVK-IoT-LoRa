@@ -127,6 +127,13 @@ void setup() {
 
 void loop() {
 
+
+
+
+
+
+
+  /*
     currentMillis = millis(); // get the current time
 
     // is it time to blink the LED?
@@ -144,6 +151,7 @@ void loop() {
 
         digitalWrite(LED_BUILTIN, ledState); // apply the new LED state
     }
+  */
 }
 
 
