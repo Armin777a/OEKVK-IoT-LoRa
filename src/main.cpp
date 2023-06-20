@@ -161,10 +161,9 @@ float getTemperature(void) {
 }
 
 void sendFloatTemperatureLora(float temperture) {
-    String commandToSend = "radio tx ";
+    String commandToSend = "mac tx uncnf 6 ";
 
-    commandToSend += String(convertFloatToDecimal(temperture));
-    commandToSend += "C0";
+    commandToSend += String(convertFloatToDecimal(temperture), HEX);
 
     loraSerial.println(commandToSend);
     debugSerial.println(commandToSend);
