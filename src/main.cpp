@@ -54,9 +54,7 @@
 // Function prototypes
 // ==============================================================================
 
-float getTemperature(void);
-void sendFloatTemperatureLora(float temperture);
-uint16_t convertFloatToDecimal(float value);
+void sendData(int data);
 
 
 
@@ -67,13 +65,14 @@ uint16_t convertFloatToDecimal(float value);
 
 // For the nonblocking delay
 unsigned long currentMillis, previousMillis;                                  // variables used to implement blink interval
-const long interval = 10000;                                                  // interval (in mS) at which to toggle LED_BUILTIN
+const long interval = 20000;                                                  // interval (in mS) at which to toggle LED_BUILTIN
 
 // For the leds
 int ledState = LOW;  
 
-// For the temperature sensor
-float temperature = 0;
+// For the timer
+int timerClock = 0;
+int isTimerRunning = 0;
 
 
 
@@ -128,12 +127,6 @@ void setup() {
 void loop() {
 
 
-
-
-
-
-
-  /*
     currentMillis = millis(); // get the current time
 
     // is it time to blink the LED?
@@ -142,16 +135,19 @@ void loop() {
 
         if (ledState == LOW) {
             ledState = HIGH;
-            
-            temperature = getTemperature();
-            sendFloatTemperatureLora(temperature);
         } else {
             ledState = LOW;
         }
-
         digitalWrite(LED_BUILTIN, ledState); // apply the new LED state
+
+
+
+        sendData(isTimerRunning);
     }
-  */
+
+    while (loraSerial.available()) {
+        debugSerial.write(loraSerial.read());        // relay responses to terminal from RN2903
+    }
 }
 
 
@@ -160,24 +156,15 @@ void loop() {
 // Functions
 // ==============================================================================
 
-float getTemperature(void) {
-    // 10mV per C, 0C is 500mV
-    float mVolts = (float)analogRead(TEMP_SENSOR) * 3300.0 / 4096.0; // Calculate voltage value 3300mV (2^12)=4096
-    float temp = (mVolts - 500.0) / 10.0;                            // Gives value to 0.1degC - calculate temperature value
-
-    return temp;
-}
-
-void sendFloatTemperatureLora(float temperture) {
+void sendData(int data) {
     String commandToSend = "mac tx uncnf 6 ";
 
-    commandToSend += String(convertFloatToDecimal(temperture), HEX);
+    commandToSend += String(data, HEX);
 
     loraSerial.println(commandToSend);
     debugSerial.println(commandToSend);
     debugSerial.println(loraSerial.readString());
 }
 
-uint16_t convertFloatToDecimal(float value) {
-    return value * 100;
-}
+
+
