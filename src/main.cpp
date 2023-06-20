@@ -123,6 +123,10 @@ void setup() {
     delay(10000);
     debugSerial.println("Kuldes megkezdve");
 
+    loraSerial.println("mac pause");
+    delay(10000);
+    loraSerial.println("mac set pwr 14");
+    delay(10000);
 }
 
 
@@ -138,7 +142,7 @@ void loop() {
             ledState = HIGH;
             
             temperature = getTemperature();
-            sendFloatTemperatureLora(temperature);
+            //sendFloatTemperatureLora(temperature);
         } else {
             ledState = LOW;
         }
@@ -162,7 +166,7 @@ float getTemperature(void) {
 }
 
 void sendFloatTemperatureLora(float temperture) {
-    String commandToSend = "mac tx uncnf 6 ";
+    String commandToSend = "radio tx ";
 
     commandToSend += String(convertFloatToDecimal(temperture));
     commandToSend += "C0";
